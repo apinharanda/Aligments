@@ -1,7 +1,7 @@
 # Aligments
 
 There are several different ways to align whole genomes and which one to use depends on the reason: we dont always align to ref
-This rep has a collection of several different kinds of alignments we use in a regular basis
+This rep has a collection of several different kinds of alignments logs we use in a regular basis
 
 The nature of MUMmer is to chain together "maximal unique matches", so at its core it relies on those small stretches of hits. It is very fast, and has a good visual output
 It is terrible to actually get the sequences
