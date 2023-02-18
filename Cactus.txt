@@ -1,0 +1,146 @@
+##March 2022
+## cactus is a reference free whole genome aligner
+
+#Installation:
+#- Here are the precompiled binaries (https://github.com/ComparativeGenomicsToolkit/cactus/releases)
+#- Make sure to run the extra commands to set up toil (https://github.com/ComparativeGenomicsToolkit/cactus/blob/2dc700813f27536ca4ff1bef795ef8b1ab356e78/BIN-INSTALL.md)
+
+
+###cd into bin 
+#To build a python virtualenv and activate, do the following steps:
+
+cd /moto/palab/users/apinharanda/bin
+
+conda create -n cactus_conda python=3.8
+conda activate cactus_conda
+
+#installing pip virtual env using conda evn
+python3 -m pip install virtualenv
+python3 -m virtualenv -p python3.8 cactus_virtualenv
+
+wget -r https://github.com/ComparativeGenomicsToolkit/cactus/releases/download/v2.0.5/cactus-bin-v2.0.5.tar.gz .
+
+mv github.com/ComparativeGenomicsToolkit/cactus/releases/download/v2.0.5/cactus-bin-v2.0.5.tar.gz .
+
+tar -xzf cactus-bin-v2.0.5.tar.gz
+
+#activate the python env
+source cactus_virtualenv/bin/activate
+
+cd cactus
+python3 -m pip install -U setuptools pip==21.3.1
+python3 -m pip install -U -r ./toil-requirement.txt
+python3 -m pip install -U .
+
+cd bin && for i in wigToBigWig faToTwoBit bedToBigBed bigBedToBed bedSort hgGcPercent; do wget -q http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/${i}; chmod ugo+x ${i}; done
+
+###it should be installed
+
+#then each time we log in and want to use it do:
+
+conda activate cactus_conda
+source /moto/palab/users/apinharanda/bin/cactus_virtualenv/bin/activate
+conda deactivate
+PATH=/moto/palab/users/apinharanda/bin/cactus-bin-v2.0.5/bin/:$PATH
+export PATH
+export TOIL_SLURM_ARGS="--account=palab -t 96:00:00"
+
+
+##test the installation anywhere
+cactus ./cactus_test /moto/palab/users/apinharanda/bin/cactus/examples/evolverMammals.txt ./evolverMammals.hal --realTimeLogging --binariesMode local 
+
+##submit as a batch job 
+sbatch cactus.test.sh 
+
+
+#####
+#Aligning:
+#- Use 'screen' to start a session that will keep running after you log out. You can use crtl+a followed by ctrl+d to detach, and 'screen -r' to reattach. 
+#- Depending on the hpc, you will need to set up some variables so that toil knows how to send jobs properly. In my case this was critical: 'export TOIL_SLURM_ARGS="--account=palab -t 96:00:00"' (already above)
+
+
+#The real run
+
+screen
+conda activate cactus_conda
+source /moto/palab/users/apinharanda/bin/cactus_virtualenv/bin/activate
+conda deactivate
+PATH=/moto/palab/users/apinharanda/bin/cactus-bin-v2.0.5/bin/:$PATH
+export PATH
+export TOIL_SLURM_ARGS="--account=palab -t 96:00:00"
+
+#To run Cactus, the basic format is:
+#cactus <jobStorePath> <seqFile> <outputHal>
+
+#seqFile is the input file
+
+#check this link to see how to calculate the Newick tree
+https://phylo.bio.ku.edu/BIOL428/pre-ml-tree-inference.pdf
+
+#to calculate pairwise differences for the matrix use the dxy script (check the folder on how to calculate dxy and pi, also need pseudorefs)
+
+# Sequence data for progressive alignment of 3 genomes
+# Bmori is flagged as good assembly
+#check README.md in the progressive cactus github
+((Bmand:0.03,Bmori:0.03),Tv:0.02);
+*Bmori /moto/palab/users/apinharanda/caudalHorn/reference_genomes/Bomo_genome_assembly.fa.masked
+Bmand /moto/palab/users/apinharanda/caudalHorn/reference_genomes/bmand_2.9k.fasta.masked
+Tv /moto/palab/users/apinharanda/caudalHorn/reference_genomes/Tv_genome.fasta.masked
+
+#
+#
+###Please ensure your genomes are soft-masked with RepeatMasker
+
+##make a file with this inside
+
+#!/bin/bash
+
+#SBATCH --output=%j.stdout
+#SBATCH --error=%j.stderr
+#SBATCH --job-name="cactus"
+#SBATCH --account=palab
+#SBATCH --account=palab
+#SBATCH --ntasks=1
+#SBATCH --mem=192000
+#SBATCH --cpus-per-task=20
+
+
+####actually this is wrong, just write this
+
+export TOIL_SLURM_ARGS="--account=palab -t 96:00:00"
+
+#export TOIL_SLURM_ARGS="-mem=0"
+
+
+#cactus-prepare-toil ./cactus_temp \
+#        ./seqFile \
+#        --outHal ./Bmori_Bmand_Tv_outHal \
+#        --workDir /moto/palab/users/apinharanda/caudalHorn/cactus/ \
+#        --binariesMode local --preprocessCores 24 --preprocessDisk 500G \
+#        --preprocessMemory 190G --blastCores 24 --blastDisk 500G --blastMemory 190G \
+#        --alignCores 24 --alignDisk 500G --alignMemory 190G --maxDisk 500G   &> cactus_temp.log &
+        
+cactus-prepare-toil ./cactus_temp ./seqFile --outHal ./Bmori_Bmand_Tv_outHal --batchSystem slurm --workDir /moto/palab/users/apinharanda/caudalHorn/cactus/ --disableCaching --binariesMode local --preprocessCores 24 --preprocessDisk 500G --preprocessMemory 190G --blastCores 24 --blastDisk 500G --blastMemory 190G --alignCores 24 --alignDisk 500G --alignMemory 190G --maxDisk 500G &> cactus_log_lout &
+
+
+
+       
+# You can probably lower down the number of cores and memory settings, if genomes are smaller. 
+
+#run it with 
+
+sbatch [filename.sh]
+
+#General comments: 
+#- Be careful with the number of files in $tmpFileDir.
+#- Probably a good idea to run first a single chromosome (or any sequences that you know are syntenic between the species).
+#- haltools is your best friend once you get the output alignment file (https://github.com/ComparativeGenomicsToolkit/hal/blob/master/README.md)
+
+
+###after we get a HAL file 
+#this is a simple pipeline of what to do after having the HAL
+
+https://bioinf.uni-greifswald.de/augustus/binaries/tutorial-cgp/cactus.html
+
+
+

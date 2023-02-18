@@ -1,0 +1,50 @@
+#Sep 17 2022
+#this is an example of how to minimally run and install OrthoFinder 
+
+##run orthofinder for faa of 
+#download and gunzip
+#Dsan
+https://www.ncbi.nlm.nih.gov/assembly/GCF_016746245.2
+#Dyak (Tai18E2)
+https://www.ncbi.nlm.nih.gov/assembly/GCF_016746365.2
+#Dsim
+https://www.ncbi.nlm.nih.gov/assembly/GCF_016746395.2
+#Dtei
+https://www.ncbi.nlm.nih.gov/assembly/GCF_016746235.2
+#Dmel
+https://www.ncbi.nlm.nih.gov/assembly/GCF_000001215.4
+
+#use the .faa directly after selecting the largest transcript, this works only for ensemble downloads
+for f in *faa ; do python /burg/palab/users/ap3815/bin/primary_transcript.py $f ; done
+
+#create environment
+conda create -n orthofinder
+#activate 
+conda activate orthofinder
+#install
+conda install -n orthofinder -c bioconda orthofinder
+
+#create symb links to have simpler names 
+#make a dir of these refs
+mkdir protein_refs
+cd protein_refs
+ln -s GCF_000001215.4_Release_6_plus_ISO1_MT_protein.faa ../Dmel_protein.faa
+ln -s GCF_016746235.2_Prin_Dtei_1.1_protein.faa ../Dtei_protein.faa
+ln -s GCF_016746245.2_Prin_Dsan_1.1_protein.faa ../Dsan_protein.faa
+ln -s GCF_016746365.2_Prin_Dyak_Tai18E2_2.1_protein.faa ../Dyak_protein.faa
+ln -s GCF_016746395.2_Prin_Dsim_3.1_protein.faa ../Dsim_protein.faa
+
+#then cd out of the directory and run
+sbatch --account=palab --mem=64000 --time=12:00:00 run_orthofinder.sh
+
+#where 
+cat run_orthofinder.sh
+orthofinder -f protein_refs 
+
+#for CDS do
+sbatch --account=palab --mem=128000 --time=12:00:00
+orthofinder -d -f Dana_Dtei_Dyak_Dsan_Dsim_Dmel_CDS 
+
+
+
+

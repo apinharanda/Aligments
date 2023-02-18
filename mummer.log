@@ -1,0 +1,66 @@
+###v1 6Feb2022
+
+#quick description of how to use mummer
+
+
+##the example below uses mmumer in a whole genome vs whole genome, and then single chr vs whole genome
+
+#need conda forge to then install gnuplot
+#conda install -n mummer gnuplot
+#conda install -n mummer -c libwebp=0.5.2
+#
+#going against my own advice and will install in the base env
+#conda activate
+#conda install gnuplot
+#conda install -c bioconda mummer 
+
+
+#then just activate base (conda activate)
+
+#While run-mummer1 and run-mummer3 focus more on what is different between two sequences, nucmer focuses on what is the same.
+#It has very few restrictions on what it will align, so rearrangements, inversions and repeats will all be identified by nucmer. 
+
+##run for the full thing for the full genome
+
+time nucmer --maxgap=500 --mincluster=100 --prefix=nucmer_fullGeno_p50_oki  Bomo_genome_assembly.fa bmand_2.9k.fasta 
+
+delta-filter -q -r nucmer_fullGeno_p50_oki.delta > nucmer_fullGeno_p50_oki.delta.filter
+
+mummerplot -large -layout --png nucmer_fullGeno_p50_oki.delta.filter -R Bomo_genome_assembly.fa -Q bmand_2.9k.fasta --prefix nucmer_fullGeno_p50_oki
+
+
+
+####run for a single chr
+#use seqkit if fasta is wrapped (see details in another script in the same folder)
+#seqkit seq -w0 Bomo_genome_assembly.fa | grep -A1 Bomo_Chr4 > Bomo_genome_assembly.chr4.fa
+
+
+time nucmer --maxgap=500 --mincluster=100 --prefix=nucmer_fullGeno_p50_oki_chr4  Bomo_genome_assembly.chr4.fa bmand_2.9k.fasta 
+
+delta-filter -q -r nucmer_fullGeno_p50_oki_chr4.delta > nucmer_fullGeno_p50_oki.delta.filter
+
+mummerplot -large -layout --png nucmer_fullGeno_p50_oki.delta.filter -R Bomo_genome_assembly.chr4.fa -Q bmand_2.9k.fasta --prefix nucmer_fullGeno_p50_oki_chr4
+
+
+
+time nucmer --maxgap=500 --mincluster=100 --prefix=nucmer_fullGeno_p50_Tv_chr4 Bomo_genome_assembly.chr4.fa Tv_genome.fasta
+
+delta-filter -q -r nucmer_fullGeno_p50_Tv_chr4.delta > nucmer_fullGeno_p50_Tv.delta.filter
+
+mummerplot -large -layout --png nucmer_fullGeno_p50_Tv.delta.filter -R Bomo_genome_assembly.chr4.fa -Q Tv_genome.fasta --prefix nucmer_fullGeno_p50_Tv_chr4
+
+
+
+
+####then check the specific chr against each other 
+
+seqkit seq -w0 Tv_genome.fasta | grep -A1 Tv_ChrA1 > Tv.chrA1.fa
+
+
+time nucmer --maxgap=500 --mincluster=100 --prefix=nucmer_fullGeno_p50_Tv_chr4_chrA1 Bomo_genome_assembly.chr4.fa Tv.chrA1.fa
+
+delta-filter -q -r nucmer_fullGeno_p50_Tv_chr4_chrA1.delta > nucmer_fullGeno_p50_Tv_chr4_chrA1.delta.filter
+
+mummerplot -large -layout --png nucmer_fullGeno_p50_Tv_chr4_chrA1.delta.filter -R Bomo_genome_assembly.chr4.fa -Q Tv.chrA1.fa --prefix nucmer_fullGeno_p50_Tv_chr4_chrA1
+
+
